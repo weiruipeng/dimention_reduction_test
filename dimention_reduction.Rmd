@@ -1,0 +1,269 @@
+---
+title: "dimention_reduction"
+author: "R.W."
+date: '2022-11-15'
+output: html_document
+abstract: dimention reduction methods (PCA, tSNE, UMAP and LDA) time consuming tests. Dataset used is a MNIST image dataset, it can be accessed here https://www.kaggle.com/datasets/datamunge/sign-language-mnist. I only used the test dataset. 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# library
+```{r,echo=F,message=F,warning=F}
+library(ggplot2)
+library(ggfortify)
+library(ggpubr)
+library(M3C)
+library(umap)
+library(klaR)
+library(psych)
+library(MASS)
+library(devtools)
+library(ape)
+library(plotly)
+```
+
+
+# read in data
+```{r}
+train = read.csv('~/Desktop/kaggle_dimention_reduction/sign_mnist_test/sign_mnist_test.csv')
+test = read.csv('~/Desktop/kaggle_dimention_reduction/sign_mnist_test/sign_mnist_test.csv')
+```
+
+# PCA
+## training
+```{r}
+pca_time = system.time(train_pca <- prcomp(train[,-1], scale=TRUE))
+```
+
+### the first three components 2D plots
+```{r}
+temp_pca = as.data.frame(train_pca$x)
+temp_pca$label = as.factor(train[,1])
+p1_pca = ggplot(data=temp_pca,aes(x=PC1,y=PC2,col=label)) +
+  geom_point() +
+  theme_bw()
+
+p2_pca = ggplot(data=temp_pca,aes(x=PC1,y=PC3,col=label)) +
+  geom_point() +
+  theme_bw()
+
+p3_pca = ggplot(data=temp_pca,aes(x=PC2,y=PC3,col=label)) +
+  geom_point() +
+  theme_bw()
+
+p_pca = ggarrange(p1_pca, p2_pca, p3_pca, nrow=1,common.legend = TRUE)
+
+annotate_figure(p_pca, top = text_grob("PCA plot of the first three components", 
+               color = "black", face = "bold", size = 14))
+
+```
+### 3D plots of the first three component 
+```{r,warning=F}
+fig_pca <-  plot_ly(data = temp_pca ,x =  ~PC1, y = ~PC2, z = ~PC3, color = ~label) %>% 
+  add_markers(size = 8) %>%
+  layout( 
+    xaxis = list(
+      zerolinecolor = "#ffff",
+      zerolinewidth = 2,
+      gridcolor='#ffff'), 
+    yaxis = list(
+      zerolinecolor = "#ffff",
+      zerolinewidth = 2,
+      gridcolor='#ffff'),
+    scene =list(bgcolor = "#e5ecf6"))
+fig_pca
+```
+# tSNE
+## training
+```{r}
+tsne_time = system.time({train_tsne = Rtsne::Rtsne(train[,-1],dims=3)})
+temp_tsne = as.data.frame(train_tsne$Y)
+temp_tsne$label = train[,1]
+temp_tsne$label = as.factor(temp_tsne$label)
+```
+
+### the first three tSNE 2D plots
+```{r}
+p1_tsne = ggplot(temp_tsne,aes(x=V1,y=V2,col=label)) +
+  geom_point() +
+  theme_bw() +
+  ylab("tSNE2") +
+  xlab("tSNE1")
+
+p2_tsne = ggplot(temp_tsne,aes(x=V1,y=V3,col=label)) +
+  geom_point() +
+  theme_bw() +
+  ylab("tSNE3") +
+  xlab("tSNE1") 
+
+p3_tsne = ggplot(temp_tsne,aes(x=V2,y=V3,col=label)) +
+  geom_point() +
+  theme_bw() +
+  ylab("tSNE3") +
+  xlab("tSNE2") 
+
+p_tsne = ggarrange(p1_tsne, p2_tsne, p3_tsne, nrow=1,common.legend = TRUE)
+
+annotate_figure(p_tsne, top = text_grob("tSNE plot of the first three components", 
+               color = "black", face = "bold", size = 14))
+```
+
+### 3D plots of the first three component 
+```{r,warning=F}
+fig_tsne <-  plot_ly(data = temp_tsne ,x =  ~V1, y = ~V2, z = ~V3, color = ~label) %>% 
+  add_markers(size = 8) %>%
+  layout( 
+    xaxis = list(
+      zerolinecolor = "#ffff",
+      zerolinewidth = 2,
+      gridcolor='#ffff'), 
+    yaxis = list(
+      zerolinecolor = "#ffff",
+      zerolinewidth = 2,
+      gridcolor='#ffff'),
+    scene =list(bgcolor = "#e5ecf6"))
+fig_tsne
+```
+
+# UMAP
+## training
+```{r}
+time_umap = system.time({train_umap = umap(train[,-1],n_components = 3)})
+```
+
+### the 2D plots of the first three dimentions of UMAP results
+```{r}
+temp_umap = as.data.frame(train_umap$layout)
+temp_umap$label = as.factor(train[,1])
+
+p1_umap = ggplot(data=temp_umap,aes(V1,V2,col=label)) +
+  geom_point()+
+  xlab("UMAP1") +
+  ylab("UMAP2") +
+  theme_bw()
+
+p2_umap = ggplot(data=temp_umap,aes(V1,V3,col=label)) +
+  geom_point()+
+  xlab("UMAP1") +
+  ylab("UMAP3") +
+  theme_bw()
+
+p3_umap = ggplot(data=temp_umap,aes(V2,V3,col=label)) +
+  geom_point()+
+  xlab("UMAP2") +
+  ylab("UMAP3") +
+  theme_bw()
+
+p_umap = ggarrange(p1_umap, p2_umap, p3_umap, nrow=1,common.legend = TRUE)
+
+annotate_figure(p_umap, top = text_grob("UMAP plot of the first three components", 
+               color = "black", face = "bold", size = 14))
+```
+
+### 3D plots of the first three component 
+```{r,warning=F}
+fig_umap <-  plot_ly(data = temp_umap ,x =  ~V1, y = ~V2, z = ~V3, color = ~label) %>% 
+  add_markers(size = 8) %>%
+  layout( 
+    xaxis = list(
+      zerolinecolor = "#ffff",
+      zerolinewidth = 2,
+      gridcolor='#ffff'), 
+    yaxis = list(
+      zerolinecolor = "#ffff",
+      zerolinewidth = 2,
+      gridcolor='#ffff'),
+    scene =list(bgcolor = "#e5ecf6"))
+fig_umap
+```
+
+
+
+# LDA
+## training
+```{r}
+time_lda = system.time({model = lda(label ~ .,train)})
+```
+
+```{r}
+train_lda = predict(model)
+
+plot_data_lda <- data.frame(outcome = train[,1],
+                        lda = train_lda$x)  
+plot_data_lda$outcome=as.factor(plot_data_lda$outcome)
+```
+
+### the 2D plots of the first three dimentions of LDA results
+```{r}
+p1_lda = ggplot(data = plot_data_lda,
+       mapping = aes(x = lda.LD1, y = lda.LD2, color = outcome)) +
+  geom_point() +
+  theme_bw() +
+  ylab("LDA2") +
+  xlab("LDA1")
+
+p2_lda = ggplot(data = plot_data_lda,
+       mapping = aes(x = lda.LD1, y = lda.LD3, color = outcome)) +
+  geom_point() +
+  theme_bw() +
+  ylab("LDA3") +
+  xlab("LDA1")
+
+p3_lda = ggplot(data = plot_data_lda,
+       mapping = aes(x = lda.LD2, y = lda.LD3, color = outcome)) +
+  geom_point() +
+  theme_bw() +
+  ylab("LDA3") +
+  xlab("LDA2")
+
+p_lda = ggarrange(p1_lda, p2_lda, p3_lda, nrow=1,common.legend = TRUE)
+
+annotate_figure(p_lda, top = text_grob("LDA plot of the first three components", 
+               color = "black", face = "bold", size = 14))
+```
+
+### 3D plots of the first three component 
+```{r,warning=F}
+fig_lda <-  plot_ly(data = plot_data_lda ,x =  ~lda.LD1, y = ~lda.LD2, z = ~lda.LD3, color = ~outcome) %>% 
+  add_markers(size = 8) %>%
+  layout( 
+    xaxis = list(
+      zerolinecolor = "#ffff",
+      zerolinewidth = 2,
+      gridcolor='#ffff'), 
+    yaxis = list(
+      zerolinecolor = "#ffff",
+      zerolinewidth = 2,
+      gridcolor='#ffff'),
+    scene =list(bgcolor = "#e5ecf6"))
+fig_lda
+```
+
+
+# time comparsion
+time consuming for each dimension-reduction method 
+```{r}
+time_consume = cbind.data.frame(as.matrix(pca_time),as.matrix(tsne_time),as.matrix(time_umap),as.matrix(time_lda))[1:3,]
+
+colnames(time_consume) = c("PCA","tSNE","UMAP","LDA")
+
+formattable::format_table(time_consume)
+```
+
+# Summary
+The conclusion I can draw from the simple test is considering the time consuming and clustering aspects, LDA performed the best among the four. tSNE is not that bad in clustering, but it takes the longest time. 
+This results may not be widely used. I will also test the results via python with the same dataset. 
+
+I also curiosity about these four methods performance in scRNAseq/transcriptome datasets. 
+
+
+
+
+
+
+
+
+
